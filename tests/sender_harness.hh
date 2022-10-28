@@ -54,6 +54,7 @@ struct SenderExpectation : public SenderTestStep {
     virtual ~SenderExpectation() {}
 };
 
+// 判断sender状态
 struct ExpectState : public SenderExpectation {
     std::string _state;
 
@@ -83,6 +84,7 @@ struct ExpectSeqno : public SenderExpectation {
     }
 };
 
+// 判断已发出但还没确认字节数
 struct ExpectBytesInFlight : public SenderExpectation {
     size_t _n_bytes;
 
@@ -99,6 +101,7 @@ struct ExpectBytesInFlight : public SenderExpectation {
     }
 };
 
+// 发送列表不应该包含Segment
 struct ExpectNoSegment : public SenderExpectation {
     ExpectNoSegment() {}
     std::string description() const { return "no (more) segments"; }
@@ -122,6 +125,7 @@ struct SenderAction : public SenderTestStep {
     virtual ~SenderAction() {}
 };
 
+// 向bytestream写入，并填充segments
 struct WriteBytes : public SenderAction {
     std::string _bytes;
     bool _end_input;
@@ -150,6 +154,7 @@ struct WriteBytes : public SenderAction {
     }
 };
 
+// 
 struct Tick : public SenderAction {
     size_t _ms;
     std::optional<bool> max_retx_exceeded{};
@@ -188,6 +193,7 @@ struct Tick : public SenderAction {
     }
 };
 
+// 返回ACK和窗口大小，并填segment
 struct AckReceived : public SenderAction {
     WrappingInt32 _ackno;
     std::optional<uint16_t> _window_advertisement{};
@@ -210,6 +216,7 @@ struct AckReceived : public SenderAction {
     }
 };
 
+// 关闭TCP连接
 struct Close : public SenderAction {
     Close() {}
     std::string description() const { return "close"; }
@@ -220,6 +227,7 @@ struct Close : public SenderAction {
     }
 };
 
+// 判断发送的Segment是否正确
 struct ExpectSegment : public SenderExpectation {
     std::optional<bool> ack{};
     std::optional<bool> rst{};
@@ -336,6 +344,7 @@ struct ExpectSegment : public SenderExpectation {
 
     virtual std::string description() const { return "segment sent with " + segment_description(); }
 
+    // 弹出一个segment判断是否符合预期
     void execute(TCPSender &, std::queue<TCPSegment> &segments) const {
         if (segments.empty()) {
             throw SegmentExpectationViolation::violated_verb("existed");
@@ -378,12 +387,15 @@ struct ExpectSegment : public SenderExpectation {
     }
 };
 
+
+// TCPSender 测试类
 class TCPSenderTestHarness {
     std::queue<TCPSegment> outbound_segments;
     TCPSender sender;
     std::vector<std::string> steps_executed;
     std::string name;
 
+    // 收集输出的segment_output
     void collect_output() {
         while (not sender.segments_out().empty()) {
             outbound_segments.push(std::move(sender.segments_out().front()));
