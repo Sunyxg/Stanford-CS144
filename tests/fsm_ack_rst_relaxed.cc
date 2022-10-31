@@ -116,6 +116,7 @@ int main() {
         // test 3: ACKs in LISTEN
         cerr << "Test 3" << endl;
         ack_listen_test(cfg, base_seq, base_seq, __LINE__);
+        cerr << "Test 3" << endl;
         ack_listen_test(cfg, base_seq - 1, base_seq, __LINE__);
         ack_listen_test(cfg, base_seq, base_seq - 1, __LINE__);
         ack_listen_test(cfg, base_seq - 1, base_seq, __LINE__);

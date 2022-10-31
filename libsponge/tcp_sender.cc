@@ -63,11 +63,13 @@ void TCPSender::fill_window() {
 //! \param ackno The remote receiver's ackno (acknowledgment number)
 //! \param window_size The remote receiver's advertised window size
 void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_size) { 
+    
     // ack无效判断
     uint64_t new_ack = unwrap(ackno,_isn,_next_seqno);
     if(new_ack > _next_seqno){
         return ;
     }
+
     // 超时重传操作
     if(new_ack > ack_s){
         RTO = _initial_retransmission_timeout;
@@ -94,6 +96,7 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
         start = false;
     }
 
+    return ;
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
@@ -107,7 +110,7 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
         }else{
             _rto_base = _rto_base*2;
         }
-        RTO = window_zero ? _initial_retransmission_timeout:_rto_base;
+        RTO = window_zero ? _initial_retransmission_timeout : _rto_base;
         retransnum ++;
 
         //重传数据

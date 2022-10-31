@@ -10,10 +10,10 @@ using namespace std;
 // 未考虑超出窗口情况！！！！
 void TCPReceiver::segment_received(const TCPSegment &seg) {
     
+    // 
     if(seg.header().syn){
         if(_syn){
-            printf("连续收到SYN包!\n");
-            return;
+            return ;
         }
         _syn = true;
         _isn = seg.header().seqno.raw_value();
@@ -24,13 +24,13 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     }
 
     if((!_syn)){
-        return;
+        return ;
     }
 
     size_t len = seg.length_in_sequence_space() - seg.header().syn - seg.header().fin;
     size_t index = unwrap(WrappingInt32(_begin) , WrappingInt32(_isn), _checkp);
     if(((index + len) < _checkp) || (index) >= (_checkp + window_size())){
-        return;
+        return ;
     }
     _reassembler.push_substring(seg.payload().copy(),index,seg.header().fin);      
     _checkp = stream_out().bytes_written();
@@ -43,7 +43,7 @@ void TCPReceiver::segment_received(const TCPSegment &seg) {
     }else{
         ack = wrap((_checkp+1),WrappingInt32(_isn));
     }
-    return;
+    return ;
 }
 
 optional<WrappingInt32> TCPReceiver::ackno() const { return ack; }
