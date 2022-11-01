@@ -48,8 +48,6 @@ class TCPSender {
     unsigned int retransnum  = 0;
     unsigned int RTO ;
   
-    
-
   public:
     //! Initialize a TCPSender
     TCPSender(const size_t capacity = TCPConfig::DEFAULT_CAPACITY,
@@ -112,6 +110,8 @@ class TCPSender {
     //! \brief absolute seqno for the next byte to be sent
     // 返回下一个要发送字节的绝对序列号
     uint64_t next_seqno_absolute() const { return _next_seqno; }
+
+    bool fin_sent() const {return fin_send ; }
 
     //! \brief relative seqno for the next byte to be sent
     // 返回下一个要发送字节的相对序列号

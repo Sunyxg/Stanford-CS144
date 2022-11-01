@@ -60,6 +60,7 @@ class TCPReceiver {
     //!@}
 
     //! \brief number of bytes stored but not yet reassembled
+    // 已存但尚未组装的字节数
     size_t unassembled_bytes() const { return _reassembler.unassembled_bytes(); }
 
     //! \brief handle an inbound segment
