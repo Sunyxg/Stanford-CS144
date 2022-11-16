@@ -13,20 +13,15 @@ class TCPConnection {
     TCPConfig _cfg;
     TCPReceiver _receiver{_cfg.recv_capacity};
     TCPSender _sender{_cfg.send_capacity, _cfg.rt_timeout, _cfg.fixed_isn};
-
-    //! outbound queue of segments that the TCPConnection wants sent
     // TCPConnection希望发送的段的出站队列
     std::queue<TCPSegment> _segments_out{};
-
-    //! Should the TCPConnection stay active (and keep ACKing)
-    //! for 10 * _cfg.rt_timeout milliseconds after both streams have ended,
-    //! in case the remote TCPConnection doesn't know we've received its whole stream?
     // 用于判断是主动关闭还是被动关闭
     bool _linger_after_streams_finish{true};
+    // 标志TCPConnection是否处于激活状态
     bool _active{true};
-
+    // 自从接收到最后一个子串经历的毫秒数 
     uint64_t _linger_time{0};
-    bool _linger_begin{false};
+
 
   public:
     //! \name "Input" interface for the writer
@@ -35,18 +30,18 @@ class TCPConnection {
     //! \brief Initiate a connection by sending a SYN segment
     // 通过发送SYN段来启动一个连接
     void connect();
-
+    // 通过四次挥手断开连接
     void clean_close();
-
+    // 直接发送RST断开连接
     void unclean_close();
     
     //! \brief Write data to the outbound byte stream, and send it over TCP if possible
     //! \returns the number of bytes from `data` that were actually written.
-    // 想出站流写入数据，并通过TCP发送，返回实际写入的字节数
+    // 向出站流写入数据并通过TCP发送，返回实际写入的字节数
     size_t write(const std::string &data);
 
     //! \returns the number of `bytes` that can be written right now.
-    // 返回现在可以写入的字节数量
+    // 返回TCPSender现在可以写入的字节数量
     size_t remaining_outbound_capacity() const;
 
     //! \brief Shut down the outbound byte stream (still allows reading incoming data)
@@ -83,12 +78,11 @@ class TCPConnection {
     //!@{
 
     //! Called when a new segment has been received from the network
-    // 当从网络中收到一个新的段时被调用。
+    // 当从网络中收到一个新的段时被调用
     void segment_received(const TCPSegment &seg);
 
     void send_segment();
 
-    //! Called periodically when time elapses
     // 计时
     void tick(const size_t ms_since_last_tick);
 

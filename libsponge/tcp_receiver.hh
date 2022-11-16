@@ -14,17 +14,17 @@
 //! the acknowledgment number and window size to advertise back to the
 //! remote TCPSender.
 class TCPReceiver {
-    //! Our data structure for re-assembling bytes.
+    // 接收方的字节流重排窗口
     StreamReassembler _reassembler;
-
-    //! The maximum number of bytes we'll store.
+    // 标志是否已经接收到SYN包，true(SYN_RECV),false(LISTEN)
     bool _syn = false;
-    
+    // 接收方ByteStream的容量
     size_t _capacity;
+    // 起始序列号ISN的值
     uint32_t _isn = 0;
-    uint32_t _begin = 0;
+    // 参考点的值(第一个有待重组的字节索引)
     uint64_t _checkp = 0;
-
+    // 接收端当前第一个未组装（重排）的字节序号
     std::optional<WrappingInt32> ack{};
 
   public:

@@ -11,15 +11,19 @@
 //! possibly overlapping) into an in-order byte stream.
 class StreamReassembler {
   private:
-    // Your code here -- add private members as necessary.
-
-    ByteStream _output;  //!< The reassembled in-order byte stream 重新组装的无序字节流
-    size_t _capacity = 0;    //!< The maximum number of bytes 最大的字节数量
+    // 已重组的有序字节流写入的接收端的ByteStream
+    ByteStream _output;  
+    // StreamReassembler的容量（其等于接收方ByteStream的容量）
+    size_t _capacity = 0;    
+    // 接收端ByteStream将要读取的下一个字节的索引
     size_t read_ptr = 0;
+    // 接收端ByteStream将要写入的下一个字节的索引（第一个有待重组的字节的索引）
     size_t write_ptr = 0;
+    // 接收端接收到字节流的结束位置索引
     size_t eof_index = 0;
+    // 如果接收端已经接收到最后一个子字符串的最后一个字节，置true
     bool eof_f = false;
-
+    // 使用map（根据index从小到大排列）保存尚未重组的子字符串
     std::map<size_t,std::string> stream{};
 
   public:

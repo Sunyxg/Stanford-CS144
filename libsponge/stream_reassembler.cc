@@ -1,28 +1,25 @@
 #include "stream_reassembler.hh"
-
-// Dummy implementation of a stream reassembler.
-
-// For Lab 1, please replace with a real implementation that passes the
-// automated checks run by `make check_lab1`.
-
-// You will need to add private members to the class declaration in `stream_reassembler.hh`
-
 using namespace std;
 
 StreamReassembler::StreamReassembler(const size_t capacity) :  _output(capacity), _capacity(capacity), eof_index(capacity) {
 }
 
-//! \details This function accepts a substring (aka a segment) of bytes,
-//! possibly out-of-order, from the logical stream, and assembles any newly
-//! contiguous substrings and writes them into the output stream in order.
 // 将字符串子串按顺序写入到输出流中
+// data 此次接收到的TCPSegment中包含的字符串子串
+// index 为子串中第一个字节的索引（在接收字节流中的位置）
+// eof 标志为真时说明该子串为整个接收字节流的最后一个子串（即写入结束）
 void StreamReassembler::push_substring(const string &data, const size_t index, const bool eof) {
     
-    // 更新滑动窗口位置
+    // 更新StreamReassembler窗口位置
     read_ptr = _output.bytes_read();
     string ndata = data;
 
-    // 确定发送内容是否位于滑动窗口内，以及eof的位置
+    // 确定接收到的子串是否位于StreamReassembler窗口内
+    if(index >(read_ptr + _capacity) || (index+data.size()) < write_ptr){
+        return;
+    }
+
+    // 如果只有部分子串位于接收窗口，则只接收位于窗口内的部分，并确定eof是否位于窗口内
     if((index+data.size())>(read_ptr + _capacity)){
         ndata = data.substr(0,(read_ptr + _capacity-index));
     }else if(eof){
@@ -30,43 +27,55 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         eof_f = true;
     }
     
-    // 判断此次发送是否已经存在，若存在进行更新
+    // 判断此次接收的子串起始位置是否与StreamReassembler窗口内已有子串重叠
     auto it = stream.find(index);
     if((it != stream.end())){
+        // 如果子串重叠则记录保存更长的子串
         if(ndata.size() > it->second.size()){
             stream[it->first] = ndata;
         }       
     }else{
+        // 如果没有重叠则将子串插入StreamReassembler窗口
         stream.insert({index,ndata});
     }
     
-    // 根据发送队列重组写入
+    // 将StreamReassembler窗口子字符串进行重组
+    // 遍历StreamReassembler窗口中待重组的子字符串
     for(auto iter = stream.begin(); iter != stream.end(); ){
-        size_t old_write = write_ptr;
-        if(iter->first <= old_write){
-            if((iter->first+iter->second.size())>old_write){
-                write_ptr = iter->first+iter->second.size();
-                string write_data(iter->second.substr(old_write - iter->first));
+        // 如果子字符串起始索引小于等于ByteStream将要写入的下一个字节的索引，则写入该子字符串
+        if(iter->first <= write_ptr){
+            // 判断子串中是否有内容还没被写入ByteStream
+            if((iter->first+iter->second.size())>write_ptr){
+                // 分割出子串中没有被写入ByteStream的部分
+                string write_data(iter->second.substr(write_ptr - iter->first));
                 _output.write(write_data);
-                iter = stream.erase(iter);
-            }else{
-                iter++;
+                write_ptr = _output.bytes_written();
+                
             }
+            // 删除已写入ByteStream的子字符串
+            iter = stream.erase(iter);
         }else{
+            // 如果子字符串起始索引大于ByteStream将要写入的下一个字节的索引，跳出循环
             break;
         }
     }   
 
-    // 发送完毕后整理后续发送队列内容
+    //向ByteStream写入完毕后整理后续StreamReassembler窗口中待重组的子字符串
     auto old_it = stream.begin();
     for(auto iter = stream.begin(); iter != stream.end(); ){
-        if(iter != stream.begin()){
+        // 跳过第一个子串
+        if(iter == stream.begin()){
+            iter++;
+        }else{
+            // 判断后一个相邻两个子串是否重合
             if(iter->first < (old_it->first+old_it->second.size()))
             {
+                // 如果前一个子串包含后一个子串则直接删除后面子串
                 if((iter->first+iter->second.size())<= (old_it->first+old_it->second.size()))
                 {
                     iter = stream.erase(iter);
                 }else{
+                    // 如果相邻子串有部分重合，则将两个子串合并为一个子串
                     string s = old_it->second + iter->second.substr((old_it->first+old_it->second.size())-iter->first);
                     old_it->second = s;
                     iter = stream.erase(iter);
@@ -74,18 +83,17 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
 
             }else{
                 old_it = iter++;
-            }        
-        }else{
-            old_it = iter++;
+            } 
         }
     }
 
+    // 最后一个子串已写入，且eof为true，则通知接收方Bytestream字节流接收完毕
     if((write_ptr == eof_index) && eof_f){
         _output.end_input();
     }
 }
 
-// 统计以发出但还未被写入的字符数
+// 统计接收端已经收到但仍未成功重组的字节数量
 size_t StreamReassembler::unassembled_bytes() const { 
     size_t unassem = 0;
     for(auto iter = stream.begin(); iter != stream.end(); iter++ ){
@@ -96,6 +104,7 @@ size_t StreamReassembler::unassembled_bytes() const {
     return unassem; 
 }
 
+// 判断待重组的字节数量是否为0
 bool StreamReassembler::empty() const { 
     return {unassembled_bytes() == 0}; 
 }

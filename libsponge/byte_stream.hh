@@ -9,19 +9,20 @@
 //! Bytes are written on the "input" side and read from the "output"
 //! side.  The byte stream is finite: the writer can end the input,
 //! and then no more bytes can be written.
+// 
 class ByteStream {
   private:
-    // Your code here -- add private members as necessary.
-
-    // Hint: This doesn't need to be a sophisticated data structure at
-    // all, but if any of your tests are taking longer than a second,
-    // that's a sign that you probably want to keep exploring
-    // different approaches.
+    // 用双端队列构造缓冲区
     std::deque<char> bts {};
+    // 字节流缓冲区的大小
     size_t b_size = 0;
+    // 输出端已经读出的字符数（将要读出的下一个字节的索引）
     size_t read_count = 0;
+    // 写入端已经写入的字符数（将要写入的下一个字节的索引）
     size_t write_count = 0;
+    // 若写入端写入结束，置标志位true
     bool end_flag = false;
+    // 出错标志位
     bool _error = false;  //!< Flag indicating that the stream suffered an error.
 
   public:

@@ -2,7 +2,6 @@
 #define SPONGE_LIBSPONGE_ROUTER_HH
 
 #include "network_interface.hh"
-
 #include <optional>
 #include <queue>
 
@@ -28,7 +27,7 @@ class AsyncNetworkInterface : public NetworkInterface {
     //! - If type is ARP reply, learn a mapping from the "target" fields.
     //!
     //! \param[in] frame the incoming Ethernet frame
-    // 将受到的IPv4数据报放在_datagrams_out
+    // 将接收到的IPv4数据报放在_datagrams_out
     void recv_frame(const EthernetFrame &frame) {
         auto optional_dgram = NetworkInterface::recv_frame(frame);
         if (optional_dgram.has_value()) {
@@ -43,24 +42,21 @@ class AsyncNetworkInterface : public NetworkInterface {
 //! \brief A router that has multiple network interfaces and
 //! performs longest-prefix-match routing between them.
 class Router {
-    //! The router's collection of network interfaces
-    // 路由器的网络接口集合
+    // 路由器的网络接口的集合
     std::vector<AsyncNetworkInterface> _interfaces{};
-
-    //! Send a single datagram from the appropriate outbound interface to the next hop,
-    //! as specified by the route with the longest prefix_length that matches the
-    //! datagram's destination address.
-    // 从合适的接口发送数据报给下一跳
+    // 从合适的接口发送IPv4数据报给下一跳
     void route_one_datagram(InternetDatagram &dgram);
-
     // 构建路由结构体
     struct Route_entry {
+        // 用于匹配数据报目标地址的“至多32位”IPv4前缀(目的网络)
         const uint32_t route_prefix;
+        // 需要匹配数据报目标地址的前缀位数
         const uint8_t prefix_length;
+        // 下一跳的IP地址(如果网络直接连接到路由器，下一跳为空)
         const std::optional<Address> next_hop;
+        // 发送数据报的接口在路由接口队列中的索引值
         const size_t interface_num;
     };
-
     // 路由器的路由表
     std::vector<Route_entry> _router_table{};
 

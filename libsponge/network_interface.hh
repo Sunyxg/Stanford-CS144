@@ -33,24 +33,27 @@
 //! and learns or replies as necessary.
 class NetworkInterface {
   private:
-    //! Ethernet (known as hardware, network-access-layer, or link-layer) address of the interface
+    // 网络接口的物理地址
     EthernetAddress _ethernet_address;
-
-    //! IP (known as internet-layer or network-layer) address of the interface
+    // 网络接口的IP地址
     Address _ip_address;
-
+    // 网络接口的计时器
     size_t timer = 0;
-
+    // 封装物理地址和ARP表记录的创建时间
     struct Ethaddr_time{
       EthernetAddress ethaddr;
       size_t s_time;
     };
-
-    //! outbound queue of Ethernet frames that the NetworkInterface wants sent
+    // 网络接口待发送以太网帧的序列
     std::queue<EthernetFrame> _frames_out{};
+    // 等待队列用于存放等待ARP响应报文的IP报文
     std::multimap<uint32_t, EthernetFrame> _frames_wait{};
+    // 网络接口维护的地址解析协议(ARP)表< ip_addr , ethernet_addr , s_time>
+    // 记录了网络接口已知的ip_addr对应的ethernet_add以及此记录被创建的初始时间
     std::map<uint32_t, Ethaddr_time> arp_map{};
+    // 存放5s内已经发送了ARP请求报文的IP地址和发送ARP请求的时间
     std::map<uint32_t, size_t> arp_time{};
+  
   public:
     //! \brief Construct a network interface with given Ethernet (network-access-layer) and IP (internet-layer) addresses
     // 通过给定的物理地址和ip地址构建一个网络接口

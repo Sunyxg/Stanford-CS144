@@ -17,36 +17,33 @@
 //! segments if the retransmission timer expires.
 class TCPSender {
   private:
-    //! our initial sequence number, the number for our SYN.
-    // 随机生成的isn
+    // 随机生成的初始序列号ISN
     WrappingInt32 _isn;
-
+    // 发送方已确认的ackno
     uint64_t ack_s = 0;
-
-    //! outbound queue of segments that the TCPSender wants sent
-    // TCPsender要发送的Segment队列
+    // TCPSender要发送的Segment队列
     std::queue<TCPSegment> _segments_out{};
+    // 用于记录TCPSender已发送但还未被TCPReceiver确认的TCPSegment
+    // <Segment发送后的next_seqno, TCPSegment>
     std::map<uint64_t,TCPSegment> _segments_noack{};
-
-    //! retransmission timer for the connection
-    // 重传计时器RTO的初始值 1000
-    unsigned int _initial_retransmission_timeout;
-    unsigned int _rto_base;
-    //! outgoing stream of bytes that have not yet been sent
-    // 尚未发送的字节流 capacity = 64000
+    // TCPSender待发送字节流的缓冲区
     ByteStream _stream;
-
-    //! the (absolute) sequence number for the next byte to be sent
     // 下一个要发送的字节的绝对序列号
     uint64_t _next_seqno{0};
-
+    // 接收方当前可接收窗口的大小
     uint16_t _window = 1;
-    bool window_zero = false;  
+    // FIN已发送标志
     bool fin_send = false;
-
+    // 重传计时器RTO的初始值 1000
+    unsigned int _initial_retransmission_timeout;
+    // 重传计时器
+    unsigned int time_counter = 0;
+    // 重传计时器启动标志
     bool start = false;
+    // 重传计时器连续重传次数
     unsigned int retransnum  = 0;
-    unsigned int RTO ;
+    // 当前超时重传时间
+    unsigned int RTO;
   
   public:
     //! Initialize a TCPSender
@@ -70,7 +67,7 @@ class TCPSender {
     void ack_received(const WrappingInt32 ackno, const uint16_t window_size);
 
     //! \brief Generate an empty-payload segment (useful for creating empty ACK segments)
-    // 应该生成并发送一个在序列空间中长度为零的TCPSegment
+    // 生成并发送一个在序列空间中长度为零的TCPSegment
     void send_empty_segment();
 
     //! \brief create and send segments to fill as much of the window as possible
@@ -106,16 +103,12 @@ class TCPSender {
 
     //! \name What is the next sequence number? (used for testing)
     //!@{
-
-    //! \brief absolute seqno for the next byte to be sent
     // 返回下一个要发送字节的绝对序列号
     uint64_t next_seqno_absolute() const { return _next_seqno; }
-
-    bool fin_sent() const {return fin_send ; }
-
-    //! \brief relative seqno for the next byte to be sent
     // 返回下一个要发送字节的相对序列号
     WrappingInt32 next_seqno() const { return wrap(_next_seqno, _isn); }
+    // 返回FIN是否已经发送
+    bool fin_sent() const {return fin_send;}
     //!@}
 };
 
